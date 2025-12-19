@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modpack Quest Book - Ultimate Edition</title>
+    <style>
+        :root {
+            --bg-dark: #0f1115;
+            --bg-sidebar: #161920;
+            --bg-card: #1c212b;
+            --bg-card-hover: #232936;
+            --primary: #bb86fc; 
+            --accent: #03dac6;
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --border: #2d3748;
+            --success: #10b981;
+            --reward: #f59e0b;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            font-size: 15px;
+        }
+
+        /* --- SIDEBAR --- */
+        .sidebar {
+            width: 320px;
+            background-color: var(--bg-sidebar);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            transition: transform 0.3s ease;
+            z-index: 20;
+        }
+
+        .brand {
+            padding: 24px;
+            font-size: 1.25rem;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            color: var(--primary);
+            text-transform: uppercase;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .chapter-list {
+            flex: 1;
+            overflow-y: auto;
+            list-style: none;
+            padding: 10px 0;
+        }
+
+        .chapter-list::-webkit-scrollbar { width: 6px; }
+        .chapter-list::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+
+        .chapter-item {
+            padding: 14px 24px;
+            cursor: pointer;
+            border-left: 3px solid transparent;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .chapter-item:hover { 
+            background-color: rgba(255,255,255,0.03); 
+            color: var(--text-main); 
+        }
+        
+        .chapter-item.active { 
+            background-color: rgba(187, 134, 252, 0.08); 
+            border-left-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .chapter-badge {
+            background: rgba(0,0,0,0.3);
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 12px;
+            color: var(--text-muted);
+        }
+        .chapter-item.active .chapter-badge {
+            background: var(--primary);
+            color: #000;
+            font-weight: bold;
+        }
+
+        /* --- MAIN CONTENT --- */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .header {
+            padding: 16px 40px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(22, 25, 32, 0.95);
+            backdrop-filter: blur(8px);
+            z-index: 10;
+        }
+
+        .progress-block {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .progress-bar-bg {
+            width: 200px;
+            height: 8px;
+            background: #333;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        .progress-text {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .search-wrapper {
+            position: relative;
+        }
+
+        .search-bar {
+            background: #0f1115;
+            border: 1px solid var(--border);
+            color: white;
+            padding: 10px 16px 10px 40px;
+            border-radius: 8px;
+            width: 320px;
+            font-size: 0.9rem;
+            transition: border-color 0.2s;
+        }
+        .search-bar:focus { border-color: var(--primary); }
+        
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        /* --- SCROLL AREA --- */
+        .content-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding: 40px;
+            scroll-behavior: smooth;
+        }
+        .content-scroll::-webkit-scrollbar { width: 8px; }
+        .content-scroll::-webkit-scrollbar-track { background: #0f1115; }
+        .content-scroll::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+
+        .chapter-header { margin-bottom: 40px; animation: fadeIn 0.4s ease; }
+        .chapter-subtitle { color: var(--primary); font-size: 0.85rem; letter-spacing: 2px; text-transform: uppercase; font-weight: 700; margin-bottom: 8px; }
+        .chapter-title { font-size: 2.5rem; font-weight: 700; color: white; letter-spacing: -0.5px; }
+
+        /* --- QUEST GRID --- */
+        .quest-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 24px;
+            padding-bottom: 40px;
+        }
+
+        .quest-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            transition: all 0.25s ease;
+            animation: slideUp 0.3s ease forwards;
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        .quest-card:hover {
+            transform: translateY(-5px);
+            background-color: var(--bg-card-hover);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            border-color: #4a5568;
+        }
+
+        .quest-card.completed {
+            border-color: rgba(16, 185, 129, 0.3);
+            background: linear-gradient(160deg, rgba(16, 185, 129, 0.05) 0%, var(--bg-card) 100%);
+        }
+
+        .quest-card.completed .quest-title {
+            color: var(--success);
+            text-decoration: line-through;
+            opacity: 0.8;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .quest-id {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-family: monospace;
+            background: rgba(0,0,0,0.3);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .quest-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #fff;
+            line-height: 1.3;
+            margin-top: 8px;
+        }
+
+        .quest-desc {
+            font-size: 0.95rem;
+            color: #94a3b8;
+            line-height: 1.6;
+            flex-grow: 1;
+        }
+
+        .quest-footer {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            font-size: 0.85rem;
+        }
+
+        .prereq {
+            color: #64748b;
+            font-size: 0.8rem;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .reward-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(245, 158, 11, 0.1);
+            padding: 10px 12px;
+            border-radius: 8px;
+            color: var(--reward);
+            font-weight: 600;
+            margin-top: 5px;
+            border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
+        .check-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 2px solid #4a5568;
+            background: transparent;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: transparent;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 16px;
+        }
+        
+        .check-btn:hover { border-color: var(--primary); transform: scale(1.1); }
+
+        .quest-card.completed .check-btn {
+            background: var(--success);
+            border-color: var(--success);
+            color: white;
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+        }
+
+        .reset-btn {
+            background: transparent;
+            border: 1px solid #ef4444;
+            color: #ef4444;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            margin-left: auto;
+            transition: all 0.2s;
+        }
+        .reset-btn:hover { background: #ef4444; color: white; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { to { opacity: 1; transform: translateY(0); } }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            body { flex-direction: column; height: auto; overflow: auto; }
+            .sidebar { width: 100%; height: auto; border-right: none; border-bottom: 1px solid var(--border); }
+            .chapter-list { display: flex; overflow-x: auto; padding: 10px; white-space: nowrap; }
+            .chapter-item { padding: 10px 15px; border-left: none; border-bottom: 3px solid transparent; }
+            .chapter-item.active { border-bottom-color: var(--primary); border-left: none; background: transparent; }
+            .header { padding: 15px; flex-direction: column; gap: 15px; align-items: stretch; }
+            .search-bar { width: 100%; }
+            .quest-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+        <div class="brand">
+            <span>⚔️ Quest Book</span>
+        </div>
+        <ul class="chapter-list" id="chapterList">
+            <!-- Capitoli generati via JS -->
+        </ul>
+        <div style="padding: 20px; text-align: center; border-top: 1px solid var(--border);">
+            <button onclick="resetAll()" class="reset-btn">Reset Totale</button>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content">
+        <div class="header">
+            <div class="progress-block">
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" id="progressBar"></div>
+                </div>
+                <div class="progress-text" id="progressText">0%</div>
+            </div>
+            
+            <div class="search-wrapper">
+                <span class="search-icon">🔍</span>
+                <input type="text" class="search-bar" id="searchInput" placeholder="Cerca quest, reward o ID...">
+            </div>
+        </div>
+        
+        <div class="content-scroll">
+            <div class="chapter-header">
+                <div class="chapter-subtitle" id="chapterSubtitle">CAPITOLO 1</div>
+                <h1 class="chapter-title" id="chapterTitle">Sopravvivenza</h1>
+            </div>
+            <div class="quest-grid" id="questContainer">
+                <!-- Card generate via JS -->
+            </div>
+        </div>
+    </div>
+
+<script>
+// --- DATABASE MASSIVO DI QUEST (1-18) ---
+const chaptersData = [
+  // --- CAPITOLO 1: SURVIVAL ---
+  {
+    "id": "1", "title": "Sopravvivenza Base", "quests": [
+      { "id": "1.1", "title": "Primi Passi", "description": "Raccogli 4 blocchi di legno.", "reward": "Mele x4 (Cibo)" },
+      { "id": "1.2", "title": "Crafting", "description": "Costruisci una Crafting Table.", "prerequisites": ["1.1"], "reward": "Stick x16" },
+      { "id": "1.3", "title": "Mining Tool", "description": "Crafta un Piccone di Legno.", "prerequisites": ["1.2"], "reward": "Torce x16" },
+      { "id": "1.4", "title": "Upgrade Pietra", "description": "Crafta un set completo di tool in pietra.", "prerequisites": ["1.3"], "reward": "Pane x8" },
+      { "id": "1.5", "title": "Fusione", "description": "Costruisci una Fornace.", "prerequisites": ["1.4"], "reward": "Carbone x16" },
+      { "id": "1.6", "title": "Iron Age", "description": "Cuoci il ferro e fatti un piccone di ferro.", "prerequisites": ["1.5"], "reward": "Secchio d'acqua" },
+      { "id": "1.7", "title": "Farming", "description": "Zappa della terra e pianta del grano.", "prerequisites": ["1.4"], "reward": "Bone Meal x16" },
+      { "id": "1.8", "title": "Armatura", "description": "Indossa un set full Iron.", "prerequisites": ["1.6"], "reward": "Shield" },
+      { "id": "1.9", "title": "Diamond Hunter", "description": "Trova 3 diamanti.", "prerequisites": ["1.6"], "reward": "Fortune I Book" },
+      { "id": "1.10", "title": "Obsidian", "description": "Mina 10 ossidiana.", "prerequisites": ["1.9"], "reward": "Flint and Steel" },
+      { "id": "1.11", "title": "Nether", "description": "Costruisci il portale e accendilo.", "prerequisites": ["1.10"], "reward": "Golden Apple" },
+      { "id": "1.12", "title": "Enchanting", "description": "Crafta l'Enchanting Table.", "prerequisites": ["1.9"], "reward": "Lapis Lazuli x32" }
+    ]
+  },
+
+  // --- CAPITOLO 2: STORAGE ---
+  {
+    "id": "2", "title": "Storage & Sorting", "quests": [
+      { "id": "2.1", "title": "Chest Upgrade", "description": "Crafta una Iron Chest.", "reward": "Wood-to-Iron Upgrade" },
+      { "id": "2.2", "title": "Gold Chest", "description": "Porta la chest al livello Oro.", "prerequisites": ["2.1"], "reward": "Iron-to-Gold Upgrade" },
+      { "id": "2.3", "title": "Diamond Chest", "description": "Storage massivo vanilla-style.", "prerequisites": ["2.2"], "reward": "Gold-to-Diamond Upgrade" },
+      { "id": "2.4", "title": "Drawers", "description": "Crafta un Oak Drawer.", "reward": "Upgrade Template x4" },
+      { "id": "2.5", "title": "Compacting Drawer", "description": "Converte automaticamente lingotti in blocchi.", "prerequisites": ["2.4"], "reward": "Void Upgrade" },
+      { "id": "2.6", "title": "Controller", "description": "Crafta un Drawer Controller.", "prerequisites": ["2.4"], "reward": "Quantify Key & Lock Key" },
+      { "id": "2.7", "title": "Backpack", "description": "Crafta uno zaino base.", "reward": "Sleeping Mat" },
+      { "id": "2.8", "title": "Diamond Backpack", "description": "Upgrade dello zaino al tier Diamante.", "prerequisites": ["2.7"], "reward": "Magnet Upgrade" },
+      { "id": "2.9", "title": "Trash Can", "description": "Costruisci un cestino per eliminare item.", "reward": "Liquid Trash Can" },
+      { "id": "2.10", "title": "Storage Crate", "description": "Crafta una Small Storage Crate (Actually Additions o simili).", "reward": "Speed Upgrade (Hopper)" },
+      { "id": "2.11", "title": "Dank Storage", "description": "Unità portatile avanzata (Dank Null).", "reward": "Docking Station" },
+      { "id": "2.12", "title": "Ender Chest", "description": "Storage condiviso tra dimensioni.", "reward": "Ender Pouch" }
+    ]
+  },
+
+  // --- CAPITOLO 3: POWER ---
+  {
+    "id": "3", "title": "Power Generation", "quests": [
+      { "id": "3.1", "title": "Generatore Carbone", "description": "Costruisci una Stirling Dynamo.", "reward": "Block of Coal x4" },
+      { "id": "3.2", "title": "Cavi Energia", "description": "Crafta 16 cavi base.", "prerequisites": ["3.1"], "reward": "Battery (Buffer)" },
+      { "id": "3.3", "title": "Lava Power", "description": "Costruisci una Magmatic Dynamo.", "prerequisites": ["3.2"], "reward": "Fluid Tank (Lava)" },
+      { "id": "3.4", "title": "Solar Power", "description": "Costruisci un Pannello Solare I.", "reward": "Daylight Sensor" },
+      { "id": "3.5", "title": "Wind Power", "description": "Costruisci un Wind Generator.", "reward": "Building Gadget" },
+      { "id": "3.6", "title": "Capacitor Bank", "description": "Costruisci un blocco per accumulare energia.", "prerequisites": ["3.2"], "reward": "Energy Conduit (Upgrade)" },
+      { "id": "3.7", "title": "Bio-Generator", "description": "Energia dalle piante/cibo.", "reward": "Melon Seeds x16" },
+      { "id": "3.8", "title": "Reactant Dynamo", "description": "Reazione chimica per energia.", "reward": "Ghast Tear x2" },
+      { "id": "3.9", "title": "Numismatic Dynamo", "description": "Brucia diamanti o smeraldi per energia.", "reward": "Emerald x4" },
+      { "id": "3.10", "title": "Thermoelectric", "description": "Generatore passivo (Caldo/Freddo).", "reward": "Packed Ice x4 & Uranium Block" }
+    ]
+  },
+
+  // --- CAPITOLO 4: PROCESSING ---
+  {
+    "id": "4", "title": "Processing & Alloys", "quests": [
+      { "id": "4.1", "title": "Pulverizer", "description": "Tritura ore per raddoppiarli.", "reward": "Raw Gold x16" },
+      { "id": "4.2", "title": "Redstone Furnace", "description": "Fornace elettrica veloce.", "prerequisites": ["4.1"], "reward": "Speed Upgrade I" },
+      { "id": "4.3", "title": "Induction Smelter", "description": "Per creare leghe (Alloys).", "prerequisites": ["4.1"], "reward": "Sand x64" },
+      { "id": "4.4", "title": "Invar Ingot", "description": "Lega Ferro + Nickel.", "prerequisites": ["4.3"], "reward": "Hardened Upgrade Kit" },
+      { "id": "4.5", "title": "Electrum Ingot", "description": "Lega Oro + Argento.", "prerequisites": ["4.3"], "reward": "Redstone Reception Coil" },
+      { "id": "4.6", "title": "Signalum", "description": "Lega Rame + Argento + Redstone.", "prerequisites": ["4.3"], "reward": "Signalum Gear x2" },
+      { "id": "4.7", "title": "Enderium", "description": "Lega finale Thermal.", "prerequisites": ["4.6"], "reward": "Resonant Upgrade Kit" },
+      { "id": "4.8", "title": "Compactor", "description": "Crea piastre e ingranaggi.", "reward": "Diamond Gear" },
+      { "id": "4.9", "title": "Centrifuge", "description": "Separa i fluidi o i dust.", "reward": "Empty Cell x16" },
+      { "id": "4.10", "title": "Magma Crucible", "description": "Sciogli la Redstone in liquido.", "reward": "Redstone Block x8" }
+    ]
+  },
+
+  // --- CAPITOLO 5: AE2 ---
+  {
+    "id": "5", "title": "Applied Energistics 2", "quests": [
+      { "id": "5.1", "title": "Certus Quartz", "description": "Raccogli Certus Quartz.", "reward": "Charged Certus Quartz x8" },
+      { "id": "5.2", "title": "Inscriber", "description": "Macchina per i circuiti.", "prerequisites": ["5.1"], "reward": "Silicon x32" },
+      { "id": "5.3", "title": "Presses", "description": "Trova le 4 Inscriber Press (o craftale).", "prerequisites": ["5.2"], "reward": "Sky Stone Chest" },
+      { "id": "5.4", "title": "ME Controller", "description": "Il cervello della rete.", "prerequisites": ["5.3"], "reward": "Dense Energy Cell" },
+      { "id": "5.5", "title": "ME Drive", "description": "L'unità disco.", "prerequisites": ["5.4"], "reward": "Glass Cable x32" },
+      { "id": "5.6", "title": "1k Storage", "description": "La prima cella di memoria.", "prerequisites": ["5.5"], "reward": "Storage Housing x3" },
+      { "id": "5.7", "title": "4k Storage", "description": "Upgrade della cella.", "prerequisites": ["5.6"], "reward": "Redstone x16" },
+      { "id": "5.8", "title": "16k Storage", "description": "Cella media.", "prerequisites": ["5.7"], "reward": "Glowstone Dust x16" },
+      { "id": "5.9", "title": "Crafting Terminal", "description": "Accesso + Crafting.", "prerequisites
